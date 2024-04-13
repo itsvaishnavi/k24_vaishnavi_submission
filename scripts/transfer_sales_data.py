@@ -1,18 +1,16 @@
 from sqlalchemy import create_engine, insert, text
 import time
-import psycopg2 
+import psycopg2
+import csv
 
 time.sleep(5)
 
 class ProcessCSVFile:
 	def __init__(self):
-		self.conn = psycopg2.connect(database="db", 
-						user='root', password='password',  
-						host='127.0.0.1', port='5432'
-				)
+		self.conn = psycopg2.connect(database="db", user='postgres', password='password', host='db', port='5432')
 
 		self.conn.autocommit = True
-		self.cursor = conn.cursor() 
+		self.cursor = self.conn.cursor() 
 		print("Database connection is successful...")
 
 	def rows_from_a_csv_file(self, filename, skip_first_line=False, dialect='excel', **fmtparams):
@@ -23,11 +21,18 @@ class ProcessCSVFile:
 			for row in reader:
 				yield row
 
-	def push_row_data_to_db(self):
+	def push_row_data_to_db(self, csv_file_path):
 		for row in self.rows_from_a_csv_file(csv_file_path, skip_first_line=True):
-			print(row[0])
+			t_id = int(row[0])
+			p_id = int(row[1])
+			quantity = int(row[2])
+			sp = float(row[3])
+			pp = float(row[4])
+			
+			# row = tuple(row)
+			print(t_id, p_id, quantity, sp, pp)
 
-			query = "INSERT INTO sales(TransactionID , ProductID , Quantity, SalePrice , PurchasePrice) values(%s,%s,%s,%s,%s)"%(row[0])
+			query = "INSERT INTO sales(transaction_id , product_id , quantity, sale_price , purchase_price) values (%s,%s,%s,%s,%s)"%(t_id, p_id, quantity, sp, pp)
 
 			self.cursor.execute(query)
 
@@ -35,7 +40,7 @@ class ProcessCSVFile:
 
 
 	def export_csv_to_db(self, csv_file_path):
-		query = "COPY sales(TransactionID , ProductID , Quantity, SalePrice , PurchasePrice) FROM "+csv_file_path+" DELIMITER ';'CSV HEADER;"
+		query = "COPY sales(transaction_id , product_id , quantity, sale_price , purchase_price) FROM "+csv_file_path+" DELIMITER ';'CSV HEADER;"
   
 		self.cursor.execute(query)
 		self.conn.commit()
@@ -56,15 +61,23 @@ class ProcessCSVFile:
 def main():
 	processCSVFile = ProcessCSVFile()
 
-	option = int(input("Enter 1 to process row by row, 2 to push entire csv.\n"))
+	option = 1
+
+	# csv_file_path = input("Enter the valid csv file path:: ")
+	csv_file_path = "../sales_data.csv"
 
 	match option:
 		case 1:
-			processCSVFile.push_row_data_to_db()
+			if csv_file_path != "":
+				processCSVFile.push_row_data_to_db(csv_file_path)
+
+
+			else:
+				print("CSV file path is an empty string. Using the default csv file...")
+				processCSVFile.push_row_data_to_db("../sales_data.csv")
+
 
 		case 2:
-			csv_file_path = input("Enter the valid csv file path:: ")
-
 			if csv_file_path != "":
 				processCSVFile.export_csv_to_db(csv_file_path)
 
