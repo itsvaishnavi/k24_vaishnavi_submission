@@ -1,0 +1,6 @@
+transaction_id,product_id,quantity,sale_price,purchase_price
+1,101,3,30,15
+2,101,1,40,15
+3,102,2,25,15
+4,102,5,20,15
+5,103,6,20,10

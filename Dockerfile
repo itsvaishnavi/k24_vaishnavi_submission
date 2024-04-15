@@ -6,4 +6,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["python", "./scripts/transfer_sales_data.py"]
+ADD start.sh /
+RUN chmod +x /start.sh
+
+CMD ["/start.sh"]
