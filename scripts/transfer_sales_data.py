@@ -2,13 +2,17 @@
 import time
 import psycopg2
 import csv
+from constants import Constants
 
 time.sleep(5)
 
 class ProcessCSVFile:
 	# Database connection initialization
 	def __init__(self):
-		self.conn = psycopg2.connect(database="db", user='postgres', password='password', host='db', port='5432')
+		self.c= Constants()
+
+		# DB connection string
+		self.conn = psycopg2.connect(database=self.c.database, user=self.c.user, password=self.c.password, host=self.c.host, port=self.c.port)
 
 		self.conn.autocommit = True
 		self.cursor = self.conn.cursor() 
@@ -27,10 +31,13 @@ class ProcessCSVFile:
 
 	# Store data into the database
 	def push_row_data_to_db(self, csv_file_path):
+		# list to store the row data if database upload fails
 		self.failed_upload = []
 
+		
 		for row in self.rows_from_a_csv_file(csv_file_path, skip_first_line=True):
 			try:
+				# Data validation in the python script in order to upload data to db and to ensure the right data type
 				t_id = int(row[0])
 				p_id = int(row[1])
 				quantity = int(row[2])
@@ -38,18 +45,21 @@ class ProcessCSVFile:
 				pp = float(row[4])
 				
 				# row = tuple(row)
-				print(t_id, p_id, quantity, sp, pp)
+				# print(t_id, p_id, quantity, sp, pp)
 
+				# SQL query
 				query = "INSERT INTO sales(transaction_id , product_id , quantity, sale_price , purchase_price) values (%s,%s,%s,%s,%s)"%(t_id, p_id, quantity, sp, pp)
 
 				self.cursor.execute(query)
 
 				self.conn.commit()
+				
 			
 			except Exception as e:
 				self.failed_upload.append(row)
 				print("Exception::", e)
 
+		
 	
 	# close db connection
 	def close_db_conn(self):
@@ -60,19 +70,10 @@ class ProcessCSVFile:
 def main():
 	processCSVFile = ProcessCSVFile()
 
-	# csv_file_path = input("Enter the valid csv file path:: ")
-	csv_file_path = "../sales_data_cleaned.csv"
+	csv_file_path = processCSVFile.c.csv_file_path #value set as "../sales_data_cleaned.csv"
 
-	if csv_file_path != "":
-		processCSVFile.push_row_data_to_db(csv_file_path)
+	processCSVFile.push_row_data_to_db(csv_file_path)
 
-
-	else:
-		print("CSV file path is an empty string. Using the default csv file...")
-		processCSVFile.push_row_data_to_db("../sales_data_cleaned.csv")
-
-
-	processCSVFile.close_db_conn()
 
 # driver code
 if __name__ == '__main__':
